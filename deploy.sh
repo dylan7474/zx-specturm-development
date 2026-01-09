@@ -15,7 +15,11 @@ fi
 if [ -n "$yay_bin" ]; then
   "$yay_bin" -S --aur --rebuild fuse-emulator libspectrum
 else
-  if [ -n "${SHELL:-}" ] && "$SHELL" -lc "command -v yay" >/dev/null 2>&1; then
+  paru_bin="$(command -v paru || true)"
+  if [ -n "$paru_bin" ]; then
+    yay() { "$paru_bin" "$@"; }
+    yay -S --aur --rebuild fuse-emulator libspectrum
+  elif [ -n "${SHELL:-}" ] && "$SHELL" -lc "command -v yay" >/dev/null 2>&1; then
     "$SHELL" -lc "yay -S --aur --rebuild fuse-emulator libspectrum"
   else
     echo "[deploy] ERROR: yay not found in PATH or login shell. Set YAY_BIN or ensure yay is installed." >&2
