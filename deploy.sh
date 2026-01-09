@@ -9,7 +9,12 @@ install_fuse() {
     exit 1
   fi
 
-  echo "Installing Fuse emulator and libspectrum via yay..."
+  if pacman -Q fuse-emulator >/dev/null 2>&1 || pacman -Q libspectrum >/dev/null 2>&1; then
+    echo "Removing existing fuse-emulator/libspectrum packages to force a clean AUR rebuild..."
+    sudo pacman -Rns --noconfirm fuse-emulator libspectrum
+  fi
+
+  echo "Installing Fuse emulator and libspectrum via yay (AUR rebuild)..."
   yay -S --aur --rebuild fuse-emulator libspectrum
 }
 
