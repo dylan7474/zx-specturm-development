@@ -4,35 +4,13 @@ set -euo pipefail
 project_dir="$HOME/src/zx_project"
 
 install_fuse() {
-  yay_cmd=""
-
-  if command -v yay >/dev/null 2>&1; then
-    yay_cmd="$(command -v yay)"
-  elif [ -x /usr/bin/yay ]; then
-    yay_cmd="/usr/bin/yay"
-  elif [ -x /bin/yay ]; then
-    yay_cmd="/bin/yay"
-  fi
-
-  if [ -z "$yay_cmd" ]; then
-    echo "yay not found. Attempting to install it via pacman..."
-    sudo pacman -S --needed yay
-    if command -v yay >/dev/null 2>&1; then
-      yay_cmd="$(command -v yay)"
-    elif [ -x /usr/bin/yay ]; then
-      yay_cmd="/usr/bin/yay"
-    elif [ -x /bin/yay ]; then
-      yay_cmd="/bin/yay"
-    fi
-  fi
-
-  if [ -z "$yay_cmd" ]; then
-    echo "Error: yay not found. Please install yay, then re-run this script to install fuse-emulator and libspectrum." >&2
+  if ! command -v yay >/dev/null 2>&1; then
+    echo "Error: yay not found. Please install yay first, then re-run this script." >&2
     exit 1
   fi
 
   echo "Installing Fuse emulator and libspectrum via yay..."
-  "$yay_cmd" -S --aur --rebuild fuse-emulator libspectrum
+  yay -S --aur --rebuild fuse-emulator libspectrum
 }
 
 install_docker() {

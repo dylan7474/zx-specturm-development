@@ -13,6 +13,8 @@ On Garuda/Arch, pre-compiled binaries can suffer from library version mismatches
 yay -S --aur --rebuild fuse-emulator libspectrum
 ```
 
+> **Note:** The deploy script uses the exact command above for Fuse. Ensure `yay` is installed before running it.
+
 ### B. The compiler (Z88DK via Docker)
 
 Z88DK is the standard C compiler for Z80 systems. Installing it natively on Arch can be difficult due to dependencies, so we use Docker for a clean, reproducible toolchain.
@@ -106,6 +108,20 @@ void main(void) {
 
 ## 5. Troubleshooting
 
+### Fuse fails to start due to `libxml2.so.2`
+
+If you see:
+
+```
+fuse: error while loading shared libraries: libxml2.so.2: cannot open shared object file: No such file or directory
+```
+
+Rebuild Fuse and libspectrum from AUR so they link against your system libraries:
+
+```bash
+yay -S --aur --rebuild fuse-emulator libspectrum
+```
+
 ### “File not found” in Docker
 
 Ensure you are running the `build.sh` script from the same directory where `test.c` lives. Docker only sees your files through the volume mapping (`-v "$(pwd)":/src`).
@@ -122,3 +138,18 @@ The Spectrum screen is interleaved. If you write to memory linearly, it will fil
 
 - **Graphics:** Look into Multipaint for Linux to draw screens.
 - **Libraries:** Explore `sp1.h` in Z88DK for high-performance sprites.
+
+## 7. Cleanup (undo a deployment)
+
+If you need to revert the setup performed by `deploy.sh`, run the following commands:
+
+```bash
+# Remove the project directory
+rm -rf ~/src/zx_project
+
+# Remove Fuse emulator and libspectrum
+yay -Rns fuse-emulator libspectrum
+
+# Remove Docker (optional)
+sudo pacman -Rns docker
+```
