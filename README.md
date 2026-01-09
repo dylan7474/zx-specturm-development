@@ -1,124 +1,95 @@
-# Tutorial: ZX Spectrum Development on Modern Linux (Garuda/Arch)
+# ZX Spectrum Development on Arch/Garuda
 
-This guide provides a complete walkthrough for setting up a modern C-based development environment for the ZX Spectrum. We use a cross-development approach: write code in a modern editor, compile via Docker, and test in a dedicated emulator.
+This repo ships a one-shot deployment script plus build tooling for a modern C-based ZX Spectrum workflow: edit locally, compile in Docker (Z88DK), and run in the FBZX emulator.
 
-## 1. Environment setup
+## 1. Quick setup (recommended)
 
-### A. The emulator (Fuse)
-
-On Garuda/Arch, pre-compiled binaries can suffer from library version mismatches (for example, `libxml2.so.2` missing). To fix this, install from the AUR and rebuild locally so the binaries match your system libraries:
+Run the deployment script from the repo root:
 
 ```bash
-# Rebuild from source to ensure library compatibility
-yay -S --aur --rebuild fuse-emulator libspectrum
+./deploy.sh
 ```
 
-### B. The compiler (Z88DK via Docker)
+`deploy.sh` performs the following steps:
 
-Z88DK is the standard C compiler for Z80 systems. Installing it natively on Arch can be difficult due to dependencies, so we use Docker for a clean, reproducible toolchain.
+- Ensures `yay` or `paru` is available (AUR helper).
+- Installs the **FBZX** emulator from the AUR.
+- Installs and enables Docker.
+- Adds your user to the `docker` group if needed.
+- Creates an executable `build.sh` helper (and a starter `test.c` if missing).
+
+> **Note:** If you were just added to the `docker` group, log out/back in (or run `newgrp docker`) before running the build.
+
+## 2. Build and run
+
+### Option A: Use the generated build script
 
 ```bash
-# Install and start Docker
-sudo pacman -S docker
-sudo systemctl enable --now docker
-
-# Add yourself to the docker group so you don't need 'sudo' for every build
-sudo usermod -aG docker "$USER"
+./build.sh
 ```
 
-> **Note:** Log out and back in (or run `newgrp docker`) for the group change to take effect.
+The script compiles `test.c` in the `z88dk/z88dk` container, fixes output file permissions, and launches FBZX with the generated `test.tap`.
 
-## 2. Project configuration
-
-Create a dedicated folder for your Spectrum projects:
+### Option B: Use the Makefile
 
 ```bash
-mkdir -p ~/src/zx_project
-cd ~/src/zx_project
+make
+make run
 ```
 
-### Create the build script
+`make` builds `test.tap` and `test_CODE.bin` from `test.c`, and `make run` launches FBZX.
 
-To avoid typing a long command every time, create a `build.sh` script:
+## 3. Example program (`test.c`)
 
-```bash
-nano build.sh
-```
-
-Paste the following:
-
-```bash
-#!/bin/bash
-# 1. Run the compiler inside Docker
-# 2. Map current folder to /src inside the container
-# 3. Use the SDCC highly-optimized compiler
-docker run --rm -v "$(pwd)":/src -it z88dk/z88dk \
-  zcc +zx -vn -startup=1 -clib=sdcc_iy /src/test.c -o /src/test -create-app
-
-# 4. Fix permissions (Docker output is owned by root by default)
-sudo chown "$USER":"$USER" test.tap test_CODE.bin
-```
-
-Give it execution permissions:
-
-```bash
-chmod +x build.sh
-```
-
-## 3. Example code: “The hardware probe”
-
-Create `test.c`. This code demonstrates the three pillars of Spectrum development: ROM calls (printf), hardware ports (border), and direct memory access (VRAM).
+The included sample demonstrates basic text output and keyboard-driven border color changes:
 
 ```c
 #include <stdio.h>
 #include <arch/zx.h>
 #include <string.h>
+#include <input.h>
 
 void main(void) {
-    // 1. Clear screen using the Spectrum's internal ROM routine
-    printf("%c", 12);
+    // 1. Setup the screen
+    printf("%c", 12);               // Clear screen
+    zx_border(1);                   // Set border to blue
 
-    // 2. Manipulate the ULA (hardware port) to change border color
-    zx_border(1); // Set border to blue
+    printf("\x16\x05\x05Advanced Speccy Dev");
+    printf("\n\n    Press 'B' for Blue Border");
+    printf("\n    Press 'R' for Red Border");
+    printf("\n    Press 'G' for Green Border");
 
-    // 3. Print text using standard C
-    printf("\x16\x05\x05Hello Speccy dev!");
-    printf("\n\n    Building from Garuda...");
-
-    // 4. Direct memory access (DMA)
-    // Writing to address 22528 (attribute/color memory)
-    // Formula: (paper * 8) + ink.
-    // Here: (1 * 8) + 6 = blue background, yellow text.
-    memset((void*)22528, 14, 768);
-
+    // 2. Main Input Loop
     while (1) {
-        // Infinite loop to prevent the Speccy from crashing/resetting
+        if (in_key_pressed(IN_KEY_SCANCODE_b)) {
+            zx_border(1); // Blue
+        }
+        if (in_key_pressed(IN_KEY_SCANCODE_r)) {
+            zx_border(2); // Red
+        }
+        if (in_key_pressed(IN_KEY_SCANCODE_g)) {
+            zx_border(4); // Green
+        }
     }
 }
 ```
 
-## 4. The development loop
+## 4. Troubleshooting
 
-1. **Write/Edit:** Open `test.c` in your favorite editor.
-2. **Compile:** Run `./build.sh` in your terminal.
-3. **Check:** Ensure `test.tap` was created.
-4. **Run:** Execute `fuse test.tap`.
+### Docker permission errors
 
-## 5. Troubleshooting
+If you see a permission error from Docker, confirm you are in the `docker` group:
 
-### “File not found” in Docker
+```bash
+id -nG "$USER" | grep -qw docker && echo "docker group set"
+```
 
-Ensure you are running the `build.sh` script from the same directory where `test.c` lives. Docker only sees your files through the volume mapping (`-v "$(pwd)":/src`).
+Log out/back in (or run `newgrp docker`) if you just added the group.
 
-### “Attribute clash”
+### FBZX tape loading
 
-If you see colors bleeding into 8×8 squares, remember: the Spectrum can only have two colors per 8×8 pixel block. This is a hardware limitation, not a bug in your code.
+When FBZX starts:
 
-### Screen memory layout
-
-The Spectrum screen is interleaved. If you write to memory linearly, it will fill the screen in three distinct “shuffled” chunks. This is normal.
-
-## 6. Next steps
-
-- **Graphics:** Look into Multipaint for Linux to draw screens.
-- **Libraries:** Explore `sp1.h` in Z88DK for high-performance sprites.
+1. Press `J`, then `Symbol Shift + P` twice (LOAD "").
+2. Press `Enter`.
+3. Press `F6` to start the tape.
