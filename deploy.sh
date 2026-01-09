@@ -1,18 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.1"
+SCRIPT_VERSION="1.2.2"
 project_dir="$HOME/src/zx_project"
 
 install_fuse() {
   if ! command -v yay >/dev/null 2>&1; then
     echo "Error: yay not found. Please install yay first, then re-run this script." >&2
     exit 1
-  fi
-
-  if pacman -Q fuse-emulator >/dev/null 2>&1 || pacman -Q libspectrum >/dev/null 2>&1; then
-    echo "Removing existing fuse-emulator/libspectrum packages to force a clean AUR rebuild..."
-    sudo pacman -Rns --noconfirm fuse-emulator libspectrum
   fi
 
   echo "Installing Fuse emulator and libspectrum via yay (AUR rebuild)..."

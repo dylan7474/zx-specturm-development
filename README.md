@@ -13,7 +13,7 @@ On Garuda/Arch, pre-compiled binaries can suffer from library version mismatches
 yay -S --aur --rebuild fuse-emulator libspectrum
 ```
 
-> **Note:** The deploy script removes any existing `fuse-emulator`/`libspectrum` packages and then runs the exact command above. Ensure `yay` is installed before running it.
+> **Note:** The deploy script runs the exact command above. Ensure `yay` is installed before running it.
 
 ### B. The compiler (Z88DK via Docker)
 
@@ -121,7 +121,6 @@ fuse: error while loading shared libraries: libxml2.so.2: cannot open shared obj
 Rebuild Fuse and libspectrum from AUR so they link against your system libraries:
 
 ```bash
-sudo pacman -Rns fuse-emulator libspectrum
 yay -S --aur --rebuild fuse-emulator libspectrum
 ```
 
