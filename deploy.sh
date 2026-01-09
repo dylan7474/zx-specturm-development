@@ -12,11 +12,16 @@ fi
 if [ -z "$yay_bin" ] && [ -x /usr/bin/yay ]; then
   yay_bin="/usr/bin/yay"
 fi
-if [ -z "$yay_bin" ]; then
-  echo "[deploy] ERROR: yay not found in PATH. Set YAY_BIN or ensure yay is installed." >&2
-  exit 1
+if [ -n "$yay_bin" ]; then
+  "$yay_bin" -S --aur --rebuild fuse-emulator libspectrum
+else
+  if [ -n "${SHELL:-}" ] && "$SHELL" -lc "command -v yay" >/dev/null 2>&1; then
+    "$SHELL" -lc "yay -S --aur --rebuild fuse-emulator libspectrum"
+  else
+    echo "[deploy] ERROR: yay not found in PATH or login shell. Set YAY_BIN or ensure yay is installed." >&2
+    exit 1
+  fi
 fi
-"$yay_bin" -S --aur --rebuild fuse-emulator libspectrum
 
 echo "[deploy] Installing and enabling Docker"
 sudo pacman -S --needed docker
