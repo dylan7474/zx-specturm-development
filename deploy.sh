@@ -8,7 +8,8 @@ install_fuse() {
     echo "Installing Fuse emulator and libspectrum via yay..."
     yay -S --aur --rebuild fuse-emulator libspectrum
   else
-    echo "Warning: yay not found. Please install yay, then run: yay -S --aur --rebuild fuse-emulator libspectrum" >&2
+    echo "Error: yay not found. Please install yay, then re-run this script to install fuse-emulator and libspectrum." >&2
+    exit 1
   fi
 }
 
