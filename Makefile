@@ -1,35 +1,24 @@
-# Project Settings
-PROJECT = test
-SOURCES = test.c
-TAPE    = $(PROJECT).tap
-
 # Docker Z88DK Settings
 DOCKER_IMAGE = z88dk/z88dk
 ZCC = docker run --rm -v "$(shell pwd)":/src $(DOCKER_IMAGE) zcc
-FLAGS = +zx -vn -startup=1 -clib=sdcc_iy -create-app
+# -SO3 for optimization, -lm just in case you use math
+FLAGS = +zx -vn -startup=1 -clib=sdcc_iy -create-app -SO3 -lm
 
-.PHONY: all clean run
-
-all: $(TAPE)
-
-$(TAPE): $(SOURCES)
-	@echo "[Pipeline] Compiling $(SOURCES)..."
-	$(ZCC) $(FLAGS) /src/$(SOURCES) -o /src/$(PROJECT)
+# Pattern Rule: This builds any .tap from a matching .c file
+%.tap: %.c
+	@echo "[Pipeline] Compiling $< into $@..."
+	$(ZCC) $(FLAGS) /src/$< -o /src/$(basename $@)
 	@echo "[Pipeline] Fixing permissions..."
-	sudo chown $(shell id -u):$(shell id -g) $(TAPE) $(PROJECT)_CODE.bin
+	sudo chown $(shell id -u):$(shell id -g) $@ $(basename $@)_CODE.bin
 	@echo "--------------------------------------------------------"
-	@echo "BUILD SUCCESSFUL!"
-	@echo "--------------------------------------------------------"
-	@echo "To run in FBZX:"
-	@echo " 1. Press 'J' then '""' (LOAD \"\")"
-	@echo " 2. Press 'Enter'"
-	@echo " 3. PRESS 'F6' TO START THE TAPE"
+	@echo "BUILD SUCCESSFUL: $@"
+	@echo "To run: fbzx $@"
 	@echo "--------------------------------------------------------"
 
-run: all
-	@echo "[Pipeline] Launching FBZX..."
-	fbzx $(TAPE)
+# Shortcut to run a specific file: e.g., 'make run-plasma'
+run-%: %.tap
+	fbzx $<
 
 clean:
-	@echo "[Pipeline] Cleaning up..."
-	rm -f $(TAPE) $(PROJECT)_CODE.bin $(PROJECT)
+	@echo "[Pipeline] Cleaning all binaries..."
+	rm -f *.tap *_CODE.bin test plasma
