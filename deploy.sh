@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_VERSION="1.1.0"
 project_dir="$HOME/src/zx_project"
 
 install_fuse() {
@@ -96,6 +97,8 @@ build_project() {
     echo "Warning: Docker is not available. Skipping build." >&2
   fi
 }
+
+echo "deploy.sh version: $SCRIPT_VERSION"
 
 install_fuse
 install_docker

@@ -39,6 +39,8 @@ mkdir -p ~/src/zx_project
 cd ~/src/zx_project
 ```
 
+When you run `deploy.sh`, it prints a version banner so you can confirm which script revision you're using.
+
 ### Create the build script
 
 To avoid typing a long command every time, create a `build.sh` script:
