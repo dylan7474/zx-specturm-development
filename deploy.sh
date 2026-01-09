@@ -56,8 +56,7 @@ create_project() {
   mkdir -p "$project_dir"
   cd "$project_dir"
 
-  if [ ! -f build.sh ]; then
-    cat <<'SCRIPT' > build.sh
+  cat <<'SCRIPT' > build.sh
 #!/bin/bash
 # 1. Run the compiler inside Docker
 # 2. Map current folder to /src inside the container
@@ -68,11 +67,9 @@ docker run --rm -v "$(pwd)":/src -it z88dk/z88dk \
 # 4. Fix permissions (Docker output is owned by root by default)
 sudo chown "$USER":"$USER" test.tap test_CODE.bin
 SCRIPT
-    chmod +x build.sh
-  fi
+  chmod +x build.sh
 
-  if [ ! -f test.c ]; then
-    cat <<'CFILE' > test.c
+  cat <<'CFILE' > test.c
 #include <stdio.h>
 #include <arch/zx.h>
 #include <string.h>
@@ -99,7 +96,6 @@ void main(void) {
     }
 }
 CFILE
-  fi
 }
 
 build_project() {
