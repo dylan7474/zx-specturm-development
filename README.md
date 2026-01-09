@@ -10,10 +10,15 @@ On Garuda/Arch, pre-compiled binaries can suffer from library version mismatches
 
 ```bash
 # Rebuild from source to ensure library compatibility
-yay -S --aur --rebuild fuse-emulator libspectrum
+build_root="$(mktemp -d)"
+for pkg in fuse-emulator libspectrum; do
+  (cd "$build_root" && yay -G "$pkg")
+  (cd "$build_root/$pkg" && makepkg -si --clean --needed)
+done
+rm -rf "$build_root"
 ```
 
-> **Note:** The deploy script removes any existing `fuse-emulator`/`libspectrum` packages and then runs the exact command above. Ensure `yay` is installed before running it.
+> **Note:** The deploy script removes any existing `fuse-emulator`/`libspectrum` packages and then runs the source build steps above. Ensure `yay` is installed before running it.
 
 ### B. The compiler (Z88DK via Docker)
 
@@ -122,7 +127,12 @@ Rebuild Fuse and libspectrum from AUR so they link against your system libraries
 
 ```bash
 sudo pacman -Rns fuse-emulator libspectrum
-yay -S --aur --rebuild fuse-emulator libspectrum
+build_root="$(mktemp -d)"
+for pkg in fuse-emulator libspectrum; do
+  (cd "$build_root" && yay -G "$pkg")
+  (cd "$build_root/$pkg" && makepkg -si --clean --needed)
+done
+rm -rf "$build_root"
 ```
 
 ### “File not found” in Docker

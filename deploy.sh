@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.2.0"
 project_dir="$HOME/src/zx_project"
 
 install_fuse() {
@@ -11,12 +11,18 @@ install_fuse() {
   fi
 
   if pacman -Q fuse-emulator >/dev/null 2>&1 || pacman -Q libspectrum >/dev/null 2>&1; then
-    echo "Removing existing fuse-emulator/libspectrum packages to force a clean AUR rebuild..."
+    echo "Removing existing fuse-emulator/libspectrum packages to force a clean source rebuild..."
     sudo pacman -Rns --noconfirm fuse-emulator libspectrum
   fi
 
-  echo "Installing Fuse emulator and libspectrum via yay (AUR rebuild)..."
-  yay -S --aur --rebuild fuse-emulator libspectrum
+  echo "Building Fuse emulator and libspectrum from AUR source..."
+  build_root="$(mktemp -d)"
+  for pkg in fuse-emulator libspectrum; do
+    rm -rf "$build_root/$pkg"
+    (cd "$build_root" && yay -G "$pkg")
+    (cd "$build_root/$pkg" && makepkg -si --noconfirm --clean --needed)
+  done
+  rm -rf "$build_root"
 }
 
 install_docker() {
