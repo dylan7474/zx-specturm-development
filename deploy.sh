@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.2"
+SCRIPT_VERSION="1.2.3"
 project_dir="$HOME/src/zx_project"
 
 install_fuse() {
@@ -11,7 +11,7 @@ install_fuse() {
   fi
 
   echo "Installing Fuse emulator and libspectrum via yay (AUR rebuild)..."
-  yay -S --aur --rebuild fuse-emulator libspectrum
+  yay -S --aur --rebuild --mflags "--cleanbuild" fuse-emulator libspectrum
 }
 
 install_docker() {

@@ -10,7 +10,7 @@ On Garuda/Arch, pre-compiled binaries can suffer from library version mismatches
 
 ```bash
 # Rebuild from source to ensure library compatibility
-yay -S --aur --rebuild fuse-emulator libspectrum
+yay -S --aur --rebuild --mflags "--cleanbuild" fuse-emulator libspectrum
 ```
 
 > **Note:** The deploy script runs the exact command above. Ensure `yay` is installed before running it.
@@ -121,7 +121,7 @@ fuse: error while loading shared libraries: libxml2.so.2: cannot open shared obj
 Rebuild Fuse and libspectrum from AUR so they link against your system libraries:
 
 ```bash
-yay -S --aur --rebuild fuse-emulator libspectrum
+yay -S --aur --rebuild --mflags "--cleanbuild" fuse-emulator libspectrum
 ```
 
 ### “File not found” in Docker
