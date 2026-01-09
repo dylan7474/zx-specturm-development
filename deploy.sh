@@ -5,7 +5,18 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$project_root"
 
 echo "[deploy] Installing Fuse emulator and libspectrum from AUR (rebuild)"
-yay -S --aur --rebuild fuse-emulator libspectrum
+yay_bin="${YAY_BIN:-}"
+if [ -z "$yay_bin" ]; then
+  yay_bin="$(command -v yay || true)"
+fi
+if [ -z "$yay_bin" ] && [ -x /usr/bin/yay ]; then
+  yay_bin="/usr/bin/yay"
+fi
+if [ -z "$yay_bin" ]; then
+  echo "[deploy] ERROR: yay not found in PATH. Set YAY_BIN or ensure yay is installed." >&2
+  exit 1
+fi
+"$yay_bin" -S --aur --rebuild fuse-emulator libspectrum
 
 echo "[deploy] Installing and enabling Docker"
 sudo pacman -S --needed docker
