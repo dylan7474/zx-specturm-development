@@ -10,24 +10,48 @@
 
 #define INVADER_COLS 6
 #define INVADER_ROWS 3
+#define INVADER_SPACING 3
+#define INVADER_WIDTH 2
 
 #define PLAYER_Y 21
+#define PLAYER_WIDTH 2
 
 static const unsigned char sin_table[32] = {
     4, 5, 5, 6, 7, 7, 7, 7, 6, 6, 5, 4, 3, 2, 2, 1,
     0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 5, 6, 7, 7, 7, 7
 };
 
-static const unsigned char sprite_player[8] = {
-    0x18, 0x3C, 0x7E, 0xDB, 0xFF, 0x24, 0x5A, 0x81
+static const unsigned char sprite_player[8][2] = {
+    { 0x00, 0x00 },
+    { 0x18, 0x18 },
+    { 0x3C, 0x3C },
+    { 0x7E, 0x7E },
+    { 0xDB, 0xDB },
+    { 0xFF, 0xFF },
+    { 0x24, 0x24 },
+    { 0x42, 0x42 }
 };
 
-static const unsigned char sprite_invader_a[8] = {
-    0x3C, 0x7E, 0xDB, 0xFF, 0xBD, 0x24, 0x42, 0x81
+static const unsigned char sprite_invader_a[8][2] = {
+    { 0x3C, 0x3C },
+    { 0x7E, 0x7E },
+    { 0xDB, 0xDB },
+    { 0xFF, 0xFF },
+    { 0xBD, 0xBD },
+    { 0x24, 0x24 },
+    { 0x42, 0x42 },
+    { 0x81, 0x81 }
 };
 
-static const unsigned char sprite_invader_b[8] = {
-    0x3C, 0x7E, 0xDB, 0xFF, 0x7E, 0x24, 0x5A, 0xA5
+static const unsigned char sprite_invader_b[8][2] = {
+    { 0x3C, 0x3C },
+    { 0x7E, 0x7E },
+    { 0xDB, 0xDB },
+    { 0xFF, 0xFF },
+    { 0x7E, 0x7E },
+    { 0x24, 0x24 },
+    { 0x5A, 0x5A },
+    { 0xA5, 0xA5 }
 };
 
 static const unsigned char sprite_bullet[8] = {
@@ -43,6 +67,18 @@ static const unsigned char font_s[8] = { 0x3C, 0x40, 0x3C, 0x02, 0x02, 0x42, 0x3
 static const unsigned char font_c[8] = { 0x3C, 0x42, 0x40, 0x40, 0x40, 0x42, 0x3C, 0x00 };
 static const unsigned char font_o[8] = { 0x3C, 0x42, 0x42, 0x42, 0x42, 0x42, 0x3C, 0x00 };
 static const unsigned char font_blank[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+static const unsigned char font_digits[10][8] = {
+    { 0x3C, 0x66, 0x6E, 0x76, 0x66, 0x66, 0x3C, 0x00 },
+    { 0x18, 0x38, 0x18, 0x18, 0x18, 0x18, 0x7E, 0x00 },
+    { 0x3C, 0x66, 0x06, 0x0C, 0x18, 0x30, 0x7E, 0x00 },
+    { 0x3C, 0x66, 0x06, 0x1C, 0x06, 0x66, 0x3C, 0x00 },
+    { 0x0C, 0x1C, 0x2C, 0x4C, 0x7E, 0x0C, 0x0C, 0x00 },
+    { 0x7E, 0x60, 0x7C, 0x06, 0x06, 0x66, 0x3C, 0x00 },
+    { 0x1C, 0x30, 0x60, 0x7C, 0x66, 0x66, 0x3C, 0x00 },
+    { 0x7E, 0x66, 0x0C, 0x18, 0x18, 0x18, 0x18, 0x00 },
+    { 0x3C, 0x66, 0x66, 0x3C, 0x66, 0x66, 0x3C, 0x00 },
+    { 0x3C, 0x66, 0x66, 0x3E, 0x06, 0x0C, 0x38, 0x00 }
+};
 
 static unsigned char *zx_screen_address(unsigned char x, unsigned char y_pixel) {
     unsigned int offset;
@@ -65,9 +101,25 @@ static void draw_sprite(unsigned char x, unsigned char y_char, const unsigned ch
     }
 }
 
+static void draw_sprite16(unsigned char x, unsigned char y_char, const unsigned char sprite[8][2]) {
+    unsigned char row;
+    unsigned char y_pixel = y_char << 3;
+
+    for (row = 0; row < 8; ++row) {
+        unsigned char *cell = zx_screen_address(x, y_pixel + row);
+        cell[0] = sprite[row][0];
+        cell[1] = sprite[row][1];
+    }
+}
+
 static void draw_attribute(unsigned char x, unsigned char y, unsigned char ink, unsigned char paper) {
     unsigned char *attr_mem = (unsigned char *)ATTR_BASE;
     attr_mem[y * SCREEN_WIDTH + x] = (paper << 3) | (ink & 0x07);
+}
+
+static void draw_attribute_pair(unsigned char x, unsigned char y, unsigned char ink, unsigned char paper) {
+    draw_attribute(x, y, ink, paper);
+    draw_attribute(x + 1, y, ink, paper);
 }
 
 static void draw_font_char(unsigned char x, unsigned char y, const unsigned char *glyph, unsigned char ink) {
@@ -102,6 +154,15 @@ static void draw_word(unsigned char x, unsigned char y, const char *word, unsign
     }
 }
 
+static void draw_digit(unsigned char x, unsigned char y, unsigned char digit, unsigned char ink) {
+    if (digit > 9) {
+        draw_font_char(x, y, font_blank, ink);
+        return;
+    }
+
+    draw_font_char(x, y, font_digits[digit], ink);
+}
+
 static void clear_playfield(void) {
     unsigned char x, y, row;
 
@@ -123,12 +184,10 @@ static void draw_score(unsigned int score) {
     unsigned char ones = score % 10;
 
     draw_word(1, 0, "SCORE", 6);
-    draw_attribute(8, 0, 6, 0);
-    draw_attribute(9, 0, 6, 0);
-    draw_attribute(10, 0, 6, 0);
-    draw_attribute(11, 0, 6, 0);
-
-    printf("\x16\x01\x0D%u%u%u%u", thousands, hundreds, tens, ones);
+    draw_digit(8, 0, thousands, 6);
+    draw_digit(9, 0, hundreds, 6);
+    draw_digit(10, 0, tens, 6);
+    draw_digit(11, 0, ones, 6);
 }
 
 int main(void) {
@@ -157,18 +216,19 @@ int main(void) {
         if ((key == 'o' || key == 'O') && player_x > 0) {
             player_x--;
         }
-        if ((key == 'p' || key == 'P') && player_x < 31) {
+        if ((key == 'p' || key == 'P') && player_x < (SCREEN_WIDTH - PLAYER_WIDTH)) {
             player_x++;
         }
         if ((key == ' ') && !bullet_active) {
             bullet_active = 1;
-            bullet_x = player_x;
+            bullet_x = player_x + 1;
             bullet_y = PLAYER_Y - 1;
         }
 
         if ((frame & 7) == 0) {
             invader_offset_x += invader_dir;
-            if (invader_offset_x == 1 || invader_offset_x == 20) {
+            if (invader_offset_x == 1
+                || invader_offset_x == (SCREEN_WIDTH - INVADER_WIDTH - ((INVADER_COLS - 1) * INVADER_SPACING))) {
                 invader_dir = -invader_dir;
                 invader_offset_y++;
             }
@@ -189,8 +249,9 @@ int main(void) {
                 }
 
                 if (bullet_active
-                    && bullet_x == invader_offset_x + (col * 2)
-                    && bullet_y == invader_offset_y + (row * 2)) {
+                    && bullet_y == invader_offset_y + (row * 2)
+                    && (bullet_x == invader_offset_x + (col * INVADER_SPACING)
+                        || bullet_x == invader_offset_x + (col * INVADER_SPACING) + 1)) {
                     invader_alive[row][col] = 0;
                     bullet_active = 0;
                     score += 10;
@@ -201,8 +262,8 @@ int main(void) {
 
         clear_playfield();
 
-        draw_sprite(player_x, PLAYER_Y, sprite_player);
-        draw_attribute(player_x, PLAYER_Y, 7, 0);
+        draw_sprite16(player_x, PLAYER_Y, sprite_player);
+        draw_attribute_pair(player_x, PLAYER_Y, 7, 0);
 
         if (bullet_active) {
             draw_sprite(bullet_x, bullet_y, sprite_bullet);
@@ -216,19 +277,19 @@ int main(void) {
                 }
 
                 if ((frame & 8) == 0) {
-                    draw_sprite(invader_offset_x + (col * 2),
-                                invader_offset_y + (row * 2),
-                                sprite_invader_a);
+                    draw_sprite16(invader_offset_x + (col * INVADER_SPACING),
+                                  invader_offset_y + (row * 2),
+                                  sprite_invader_a);
                 } else {
-                    draw_sprite(invader_offset_x + (col * 2),
-                                invader_offset_y + (row * 2),
-                                sprite_invader_b);
+                    draw_sprite16(invader_offset_x + (col * INVADER_SPACING),
+                                  invader_offset_y + (row * 2),
+                                  sprite_invader_b);
                 }
 
-                draw_attribute(invader_offset_x + (col * 2),
-                               invader_offset_y + (row * 2),
-                               sin_table[(frame + col * 3 + row * 5) & 31],
-                               0);
+                draw_attribute_pair(invader_offset_x + (col * INVADER_SPACING),
+                                    invader_offset_y + (row * 2),
+                                    sin_table[(frame + col * 3 + row * 5) & 31],
+                                    0);
             }
         }
 
