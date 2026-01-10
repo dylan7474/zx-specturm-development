@@ -45,6 +45,12 @@ const unsigned char udg_data[] = {
     0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, // C: Bullet
 };
 
+// UDG character codes on the Spectrum are 144-164 (A-U).
+#define UDG_BASE 144
+#define UDG_PLAYER  (UDG_BASE + 0)
+#define UDG_INVADER (UDG_BASE + 1)
+#define UDG_BULLET  (UDG_BASE + 2)
+
 void set_color(int x, int y, unsigned char attr) {
     unsigned char *attr_mem = (unsigned char *)ATTR_START;
     if (x >= 0 && x < 32 && y >= 0 && y < 24) {
@@ -52,8 +58,8 @@ void set_color(int x, int y, unsigned char attr) {
     }
 }
 
-void draw_char(int x, int y, char c, unsigned char attr) {
-    printf("\x16%c%c%c", (char)y, (char)x, c);
+void draw_char(int x, int y, unsigned char c, unsigned char attr) {
+    printf("\x16%c%c%c", (char)y, (char)x, (char)c);
     set_color(x, y, attr);
 }
 
@@ -78,6 +84,7 @@ void init_game(void) {
     while (!in_key_pressed(IN_KEY_SCANCODE_SPACE)) {
         // Busy wait
     }
+    in_wait_nokey();
     printf("%c", 12); 
 
     for (i = 0; i < INVADER_ROWS; i++) {
@@ -102,6 +109,7 @@ void update_game(void) {
         } else {
             for (i = 0; i < INVADER_COLS * INVADER_ROWS; i++) {
                 if (invaders[i].alive && bulletX == invaders[i].x && bulletY == invaders[i].y) {
+                    clear_char(invaders[i].x, invaders[i].y);
                     invaders[i].alive = 0;
                     bulletY = -1;
                     score += 10;
@@ -129,9 +137,11 @@ void update_game(void) {
         if (hitEdge) {
             invaderDir *= -1;
             for (i = 0; i < INVADER_COLS * INVADER_ROWS; i++) {
-                if (invaders[i].alive) clear_char(invaders[i].x, invaders[i].y);
-                invaders[i].y++;
-                if (invaders[i].alive && invaders[i].y >= 21) gameOver = 1;
+                if (invaders[i].alive) {
+                    clear_char(invaders[i].x, invaders[i].y);
+                    invaders[i].y++;
+                    if (invaders[i].y >= 21) gameOver = 1;
+                }
             }
         } else {
             for (i = 0; i < INVADER_COLS * INVADER_ROWS; i++) {
@@ -168,13 +178,13 @@ void main(void) {
 
         // Rendering
         printf("\x16\x00\x00\x0F\x07 SCORE: %d", score);
-        draw_char(playerX, 22, 'A', COL_PLAYER);
-        if (bulletY >= 0) draw_char(bulletX, bulletY, 'C', COL_BULLET);
+        draw_char(playerX, 22, UDG_PLAYER, COL_PLAYER);
+        if (bulletY >= 0) draw_char(bulletX, bulletY, UDG_BULLET, COL_BULLET);
         
         count = 0;
         for (i = 0; i < INVADER_COLS * INVADER_ROWS; i++) {
             if (invaders[i].alive) {
-                draw_char(invaders[i].x, invaders[i].y, 'B', COL_INVADER);
+                draw_char(invaders[i].x, invaders[i].y, UDG_INVADER, COL_INVADER);
                 count++;
             }
         }
