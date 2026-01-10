@@ -54,14 +54,11 @@ if [ ! -f "$project_root/test.c" ]; then
   cat <<'CODE' > "$project_root/test.c"
 #include <stdio.h>
 #include <arch/zx.h>
-#include <string.h>
 
 void main(void) {
-    printf("%c", 12);               // Clear screen
-    zx_border(1);                   // Set border to blue
-    printf("\x16\x05\x05Hello Speccy dev!");
-    printf("\n\n    F6 to start tape...");
-    memset((void*)22528, 14, 768);  // Set attribute memory
+    printf("%c", 12); // Clear screen
+    zx_border(1);     // Set border to blue
+    printf("\x16\x05\x05Hello, World!");
     while (1) {}
 }
 CODE
